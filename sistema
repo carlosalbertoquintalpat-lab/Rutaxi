@@ -3,84 +3,39 @@
 <head>
   <meta charset="utf-8" />
   <title>Mapa en vivo con Leaflet y Google Sheets</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Estilos de Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
   <style>
-    #map { width: 100%; height: 600px; }
-    .legend { position: absolute; bottom: 10px; left: 10px; background: white; padding: 8px 10px; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); font: 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Arial; }
+    #map {
+      height: 100vh; /* El mapa ocupa toda la pantalla */
+      width: 100%;
+    }
   </style>
 </head>
 <body>
+  <h1>Mapa en vivo con Leaflet</h1>
   <div id="map"></div>
-  <div class="legend">Actualiza cada 10 segundos</div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
+  <!-- Librería Leaflet -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <!-- Ejemplo de inicialización del mapa -->
   <script>
-    // 1) URL del CSV publicado de tu Google Sheets
-    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQu5xJ-4aKpF-x5pAaYQ1fxkWkMHwLRksdxCFOO-ACjlZz4cOXX_WhdBLyjowSXPCZGgXcUwEx8vAHs/pub?output=csv";
+    // Crear el mapa centrado en Mérida, Yucatán
+    var map = L.map('map').setView([20.9674, -89.5926], 13);
 
-    // 2) Configuración inicial del mapa (centro Mérida)
-    const map = L.map('map');
-    const initialCenter = [20.967, -89.623];
-    map.setView(initialCenter, 12);
+    // Añadir capa base de OpenStreetMap
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
 
-    // 3) Capa base
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: "© OpenStreetMap" }).addTo(map);
-
-    // 4) Capa de marcadores
-    let markersLayer = L.layerGroup().addTo(map);
-
-    // 5) Obtener y parsear CSV
-    async function fetchCSV(url) {
-      const res = await fetch(url, { cache: "no-store" });
-      const text = await res.text();
-      const rows = text.trim().split('\n').map(r => r.split(','));
-      const headers = rows[0].map(h => h.trim().toLowerCase()); // normaliza
-      const data = rows.slice(1).map(r => {
-        const obj = {};
-        r.forEach((val, i) => obj[headers[i]] = val.trim());
-        return obj;
-      });
-      return data;
-    }
-
-    // 6) Dibujar marcadores
-    function drawMarkers(data) {
-      markersLayer.clearLayers();
-
-      data.forEach(item => {
-        const lat = parseFloat(item['latitud']);   // requiere encabezado "latitud"
-        const lng = parseFloat(item['longitud']);  // requiere encabezado "longitud"
-        if (!isFinite(lat) || !isFinite(lng)) return;
-
-        const name = item['usuario'] || 'Sin nombre';
-        const time = item['hora'] || '';
-
-        const marker = L.marker([lat, lng], { title: name });
-        marker.bindPopup(`<strong>${name}</strong><br/>${time}<br/>Lat: ${lat} / Lng: ${lng}`);
-        markersLayer.addLayer(marker);
-      });
-
-      const all = markersLayer.getLayers();
-      if (all.length > 0) {
-        const group = L.featureGroup(all);
-        map.fitBounds(group.getBounds().pad(0.1));
-      } else {
-        map.setView(initialCenter, 12);
-      }
-    }
-
-    // 7) Ciclo de actualización
-    async function refresh() {
-      try {
-        const data = await fetchCSV(CSV_URL);
-        drawMarkers(data);
-      } catch (e) {
-        console.error('Error al actualizar:', e);
-      }
-    }
-    refresh();
-    setInterval(refresh, 10000);
+    // Ejemplo: marcador en Mérida
+    L.marker([20.9674, -89.5926]).addTo(map)
+      .bindPopup('Mérida, Yucatán')
+      .openPopup();
   </script>
 </body>
 </html>
